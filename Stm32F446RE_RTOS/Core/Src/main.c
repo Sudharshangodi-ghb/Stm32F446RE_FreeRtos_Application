@@ -22,11 +22,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef uint32_t TaskProfiler;
+
+
 
 /* USER CODE END PTD */
 
@@ -42,6 +47,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+
+TaskProfiler RedLedTaskProfiler;
+TaskProfiler BlueLedTaskProfiler;
+TaskProfiler GreenLedTaskProfiler;
+
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -60,6 +70,13 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 void StartDefaultTask(void *argument);
 
+/* Tasks declaration */
+void vRedLedTask(void *pvParameters);
+void vBlueLedTask(void *pvParameters);
+void vGreenLedTask(void *pvParameters);
+int __io_putchar(int ch);
+
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -76,68 +93,26 @@ void StartDefaultTask(void *argument);
 int main(void)
 {
 
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
   /* MCU Configuration--------------------------------------------------------*/
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
+  /* Configure the GPIO pins */
   MX_GPIO_Init();
+  /* Configure the UART2 */
   MX_USART2_UART_Init();
-  /* USER CODE BEGIN 2 */
+  
+  /* Created the tasks - task.c from middle ware */
+  xTaskCreate(vRedLedTask,"RED_LED",128,NULL,osPriorityNormal,NULL);
+  xTaskCreate(vBlueLedTask,"BLUE_LED",128,NULL,osPriorityNormal,NULL);
+  xTaskCreate(vGreenLedTask,"GREEN_LED",128,NULL,osPriorityNormal,NULL);
 
-  /* USER CODE END 2 */
+  /* Start the RTOS Kernel */
+  vTaskStartScheduler();
 
-  /* Init scheduler */
-  osKernelInitialize();
 
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
 
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -145,10 +120,53 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+    printf("Once the RTOS introduced, execution will never come here");
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
+
+
+void vRedLedTask(void *pvParameters)
+{
+	while(1)
+	{
+		printf("Hello world from STM32 From Red_LED Task \n");
+		RedLedTaskProfiler++;
+	}
+}
+
+void vBlueLedTask(void *pvParameters)
+{
+	while(1)
+	{
+		printf("Hello world from STM32 From BLue_LED Task \n");
+		BlueLedTaskProfiler++;
+	}
+}
+
+void vGreenLedTask(void *pvParameters)
+{
+	while(1)
+	{
+		printf("Hello world from STM32 From Green_LED Task \n");
+		GreenLedTaskProfiler++;
+	}
+}
+
+
+/* Serial data transmit */
+int __io_putchar(int ch)
+{
+	HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1, HAL_MAX_DELAY);
+
+	return ch;
+}
+
+
+
+
 
 /**
   * @brief System Clock Configuration

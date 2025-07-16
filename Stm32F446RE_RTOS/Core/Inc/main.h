@@ -31,6 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+/* Include All RTOS related header files */
 #include "FreeRTOS.h"
 #include "task.h"
 
