@@ -22,4 +22,36 @@ rad.json
 TestResults.xml
 #VS code file
 *.vscode
+
+# Object and binary files
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+
+# Build folders
+build/
+Debug/
+Release/
+.build/
+.launch
+
+# STM32CubeIDE
+*.launch
+*.log
 *.bak
+*.dep
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Backup and temp files
+*~
+*.swp
+*.swo
+
+#vscode 
+*.vscode
