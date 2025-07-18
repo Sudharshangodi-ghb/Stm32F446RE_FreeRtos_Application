@@ -16,3 +16,6 @@ STM32F446RE Nucleo FreeRTOS with C Programming
 |   I2C3         | LCD (PCF8574 Backpack)  |  PC9 (SDA3) ,  PA8 (SCL3)                            | Alternate I2C if PB8/PB9 used for CAN                      |
 |   CAN1         | MCP2551 Transceiver     |  PB8 (CAN1_RX) ,  PB9 (CAN1_TX)                      | Standard CAN interface                                     |
 
+
+
+![Nucleo Pinout STM32F446re](image.png)
