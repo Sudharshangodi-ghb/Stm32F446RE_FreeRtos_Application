@@ -47,36 +47,39 @@ extern QueueHandle_t xLedModeQueue;
 /******************************************************************************
 *							API IMPLEMENTATION
 ******************************************************************************/
-void Led_Handler(void *params)
+void Led_Handler(void *pvParameters)
 {
-    uint8_t current_mode = 0;
-    TickType_t on_time = 300, off_time = 300;
+    LedMode_t currentMode = LED_MODE_NORMAL;
+    TickType_t xLastWakeTime = xTaskGetTickCount();
 
     while (1)
     {
-    	/* LED Pattern Handling */
-        if (xQueueReceive(xLedModeQueue, &current_mode, pdMS_TO_TICKS(10)) == pdPASS)
+        if (xQueueReceive(xLedModeQueue, &currentMode, 0) == pdPASS)
         {
-            switch (current_mode) {
-                case 0: on_time = off_time = 100; break;
-                case 1: on_time = off_time = 300; break;
-                case 2: on_time = off_time = 600; break;
-                default: on_time = off_time = 300; break;
-            }
-
-        }
-        else
-        {
-        	/* Do nothing */
+            // Mode updated
         }
 
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // LED ON
-        vTaskDelay(pdMS_TO_TICKS(on_time));
+        switch (currentMode)
+        {
+            case LED_MODE_SENSOR_FAIL:
+                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+                vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));
+                break;
 
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);   // LED OFF
-        vTaskDelay(pdMS_TO_TICKS(off_time));
+            case LED_MODE_ADC_ERROR:
+                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+                vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
+                break;
+
+            case LED_MODE_NORMAL:
+            default:
+                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+                vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+                break;
+        }
     }
 }
+
 
 /******************************************************************************
 *							LOCAL FUNCTION DEFINITIONS

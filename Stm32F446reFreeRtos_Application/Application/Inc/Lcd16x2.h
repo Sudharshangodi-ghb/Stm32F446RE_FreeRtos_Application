@@ -46,13 +46,6 @@ typedef struct {
 } LcdMessage_t;
 
 
-#define LCD_ADDR       0x4E  // Change to 0x4E or 0x27 based on your module (<<1 from 0x27)
-#define BACKLIGHT      0x08
-#define LCD_ENABLE     0x04
-#define READ_WRITE     0x02
-#define REGISTER_SEL   0x01
-
-
 /******************************************************************************
 *							API DECLARATIONS
 ******************************************************************************/

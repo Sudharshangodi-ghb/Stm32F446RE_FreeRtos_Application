@@ -42,6 +42,7 @@ static LM35_Data_t lm35_data = {
     .sensor_disconnected = false
 };
 
+
 /******************************************************************************
 *							LOCAL FUNCTION DECLARATIONS
 ******************************************************************************/
@@ -56,9 +57,9 @@ static LM35_Data_t lm35_data = {
 ******************************************************************************/
 void LM35_Handler(void *pvParameters)
 {
-	LedMode_t mode;
-	LcdMessage_t lcd_msg;
-	char TempString[10]={""};
+    LedMode_t mode;
+    LcdMessage_t lcdMsg;
+    TickType_t xLastWakeTime = xTaskGetTickCount();
 
     while(1)
     {
@@ -84,7 +85,7 @@ void LM35_Handler(void *pvParameters)
             lm35_data.adc_timeout_error = true;
         }
 
-
+        // Decide LED mode
         if (lm35_data.sensor_disconnected)
         {
             mode = LED_MODE_SENSOR_FAIL;
@@ -98,20 +99,22 @@ void LM35_Handler(void *pvParameters)
             mode = LED_MODE_NORMAL;
         }
 
-        /* Update the xLedModeQueue with Mode to enable the LED pattern */
+        // Send LED mode
         xQueueSend(xLedModeQueue, &mode, 0);
+
+        // Prepare LCD message
+        snprintf(lcdMsg.line1, 16, "Temp: %.1f C", lm35_data.temperature_c);
+        snprintf(lcdMsg.line2, 16, "Status: OK");
+
+        // Send LCD message
+        xQueueOverwrite(xLcdQueue, &lcdMsg);  // Only keep latest update
+
         HAL_ADC_Stop(&hadc1);
-        vTaskDelay(LM35_SAMPLING_DELAY);
 
-        strncpy(lcd_msg.line1, "Temp: ", 16);
-        sprintf(TempString, "%f", lm35_data.temperature_c);
-        strncat(lcd_msg.line1,TempString,strlen(TempString));
-
-        strncpy(lcd_msg.line2, "Sensor OK", 16);
-        xQueueSend(xLcdQueue, &lcd_msg, 0);
-        vTaskDelay(LM35_SAMPLING_DELAY);
+        vTaskDelayUntil(&xLastWakeTime, LM35_SAMPLING_DELAY);
     }
 }
+
 
 //  Read-only pointer to structure
 const LM35_Data_t* LM35_GetData(void)
