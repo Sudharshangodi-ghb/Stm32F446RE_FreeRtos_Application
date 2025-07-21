@@ -29,7 +29,7 @@
 /******************************************************************************
 *                            GLOBAL VARIABLES
 ******************************************************************************/
-extern QueueHandle_t xLcdQueue;
+extern QueueHandle_t xTempQueue;
 extern I2C_HandleTypeDef hi2c3;
 
 /******************************************************************************
@@ -50,7 +50,9 @@ static void LCD_Send_String(char *str);
 ******************************************************************************/
 void Lcd16x2_Handler(void *params)
 {
-    LcdMessage_t msg;
+    LcdMessage_t lcdMsg;
+    float temperature_c;
+
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
 #ifdef DEBUG_I2C_SCAN
@@ -71,13 +73,18 @@ void Lcd16x2_Handler(void *params)
 
     while (1)
     {
-        if (xQueueReceive(xLcdQueue, &msg, portMAX_DELAY) == pdPASS)
+        if (xQueueReceive(xTempQueue, &temperature_c, portMAX_DELAY) == pdPASS)
         {
+
+            // Prepare LCD message
+            snprintf(lcdMsg.line1, 16, "Temp: %.1f C", temperature_c);
+            snprintf(lcdMsg.line2, 16, "TempQueue: OK");
+
             LCD_Clear();
             LCD_Set_Cursor(0, 0);
-            LCD_Send_String(msg.line1);
+            LCD_Send_String(lcdMsg.line1);
             LCD_Set_Cursor(1, 0);
-            LCD_Send_String(msg.line2);
+            LCD_Send_String(lcdMsg.line2);
         }
         vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
     }

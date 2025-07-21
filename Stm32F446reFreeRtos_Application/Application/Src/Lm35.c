@@ -32,7 +32,7 @@
 /* ADC Handler structure */
 extern ADC_HandleTypeDef hadc1;
 extern QueueHandle_t xLedModeQueue;
-extern QueueHandle_t xLcdQueue;
+extern QueueHandle_t xTempQueue;
 
 // Static global structure (private to lm35.c only)
 static LM35_Data_t lm35_data = {
@@ -58,7 +58,6 @@ static LM35_Data_t lm35_data = {
 void LM35_Handler(void *pvParameters)
 {
     LedMode_t mode;
-    LcdMessage_t lcdMsg;
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     while(1)
@@ -73,6 +72,11 @@ void LM35_Handler(void *pvParameters)
             {
                 lm35_data.sensor_disconnected = true;
                 lm35_data.temperature_c = -100.0f;
+            }
+            else if  (lm35_data.adc_raw > LM35_OVERTEMPERATURE_ADC)
+            {
+            	lm35_data.sensor_disconnected = true;
+            	lm35_data.temperature_c = ((float)(lm35_data.adc_raw) * 3.3f * 100.0f) / 4095.0f;
             }
             else
             {
@@ -102,12 +106,9 @@ void LM35_Handler(void *pvParameters)
         // Send LED mode
         xQueueSend(xLedModeQueue, &mode, 0);
 
-        // Prepare LCD message
-        snprintf(lcdMsg.line1, 16, "Temp: %.1f C", lm35_data.temperature_c);
-        snprintf(lcdMsg.line2, 16, "Status: OK");
 
-        // Send LCD message
-        xQueueOverwrite(xLcdQueue, &lcdMsg);  // Only keep latest update
+        // Send Temperature to the Queue
+        xQueueSend(xTempQueue, &lm35_data.temperature_c,0);  // Only keep latest update
 
         HAL_ADC_Stop(&hadc1);
 

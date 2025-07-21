@@ -17,6 +17,18 @@
   *
   * History: v01
   * 	17-07-2025	-	v01	- Initial version
+  *		21-07-2025	- 	Over temperature update to >50*C
+  *
+  *
+  *	| Temp (°C) | Voltage (V) | ADC Value (12-bit @ 3.3V) |
+  *	| --------- | ----------- | ------------------------- |
+  *	| 0         | 0.0 V       | 0                         |
+  *	| 10        | 0.1 V       | \~124                     |
+  *	| 25        | 0.25 V      | \~310                     |
+  *	| 40        | 0.4 V       | \~497                     |
+  *	| 50        | 0.5 V       | \~621                     |
+  *	| 60        | 0.6 V       | \~745                     |
+  *	| 100       | 1.0 V       | \~1240                    |
   *
   *
   *
@@ -38,6 +50,7 @@
 #define LM35_ADC_TIMEOUT     100
 #define LM35_DISCONNECT_ADC  30     // ADC value below this = sensor fault
 #define LM35_SAMPLING_DELAY  1000   // 1 second
+#define LM35_OVERTEMPERATURE_ADC 625
 
 
 

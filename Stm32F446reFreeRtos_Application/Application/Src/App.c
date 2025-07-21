@@ -33,7 +33,7 @@
 extern UART_HandleTypeDef huart2;
 
 QueueHandle_t xLedModeQueue = NULL;
-QueueHandle_t xLcdQueue     = NULL;
+QueueHandle_t xTempQueue    = NULL;
 /******************************************************************************
 *							LOCAL FUNCTION DECLARATIONS
 ******************************************************************************/
@@ -72,10 +72,10 @@ void App_Init(void)
         printf("Failed to create LED queue!\r\n");
     }
 
-    xLcdQueue = xQueueCreate(5, sizeof(LcdMessage_t));
-    if (xLcdQueue == NULL)
+    xTempQueue = xQueueCreate(5, sizeof(float));
+    if (xTempQueue == NULL)
     {
-        printf("Failed to create LCD queue!\r\n");
+        printf("Failed to create temperature queue!\r\n");
     }
 
     // Create Tasks with adjusted priorities and stack
