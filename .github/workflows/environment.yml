@@ -1,0 +1,11 @@
+name: secure-boot-tools
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - flake8
+  - pytest
+  - pip:
+      - cryptography
+      - pycryptodome
