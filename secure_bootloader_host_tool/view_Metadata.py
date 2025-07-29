@@ -11,6 +11,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.exceptions import InvalidSignature
 from datetime import datetime
+from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
+
 
 # Constants
 METADATA_TOTAL_SIZE = 256   # bytes
@@ -76,6 +78,11 @@ def verify_sha256(firmware_data, extracted_hash):
     computed_hash = hashlib.sha256(firmware_data).digest()
     return computed_hash == extracted_hash, computed_hash
 
+def convert_raw_signature_to_der(raw_signature):
+    r = int.from_bytes(raw_signature[:32], 'big')
+    s = int.from_bytes(raw_signature[32:], 'big')
+    return encode_dss_signature(r, s)
+
 def main():
     bin_dir = os.path.join(os.path.dirname(__file__), "../Stm32F446reFreeRtos_Application/Debug/")
     bin_file = None
@@ -109,6 +116,9 @@ def main():
     print(f"  → ECC Signature       : {signature.hex()}")
     print(f"  → AES IV              : {aes_iv.hex()}")
 
+    signature_der = convert_raw_signature_to_der(signature)
+
+
 
 
     # Decrypt AES-CBC
@@ -127,7 +137,7 @@ def main():
     print(f"  → Computed Hash       : {computed_hash.hex()}")
 
     # Verify ECC Signature
-    is_signature_valid = verify_signature(public_key, computed_hash, signature)
+    is_signature_valid = verify_signature(public_key, computed_hash, signature_der)
     print(" ECC Signature Check:", "VALID" if is_signature_valid else "INVALID")
 
     # Print Key Info Summary
