@@ -55,3 +55,6 @@ Thumbs.db
 
 #vscode 
 *.vscode
+
+#Private Key
+private_key.pem
