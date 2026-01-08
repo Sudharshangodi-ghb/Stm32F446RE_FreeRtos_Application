@@ -42,6 +42,18 @@
 #include "Led.h"
 #include "Lcd16x2.h"
 #include "Lm35.h"
+#include "button.h"
+
+/******************************************************************************
+*                               DATA TYPE DEFINITIONS
+******************************************************************************/
+
+typedef enum
+{
+    APP_BUTTON_SHORT_PRESS = 0,
+    APP_BUTTON_DOUBLE_PRESS,
+    APP_BUTTON_LONG_PRESS
+} AppButtonEvent_t;
 
 /******************************************************************************
 *                               API DECLARATIONS
@@ -52,5 +64,9 @@ void App_Run(void);
 
 /* printf redirection */
 int __io_putchar(int ch);
+
+
+void App_HandleButtonEvent(AppButtonEvent_t event);
+
 
 #endif /* INC_APP_H_ */

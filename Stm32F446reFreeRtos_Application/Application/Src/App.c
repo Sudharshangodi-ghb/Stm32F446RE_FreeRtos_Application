@@ -20,6 +20,11 @@
 *                               INCLUDES
 ******************************************************************************/
 #include "App.h"
+#include "semphr.h"
+
+
+#define BOOT_REQUEST_MAGIC   0xB007B007U
+#define BOOT_REQUEST_ADDR    ((uint32_t *)0x40024000)
 
 /******************************************************************************
 *                               GLOBAL VARIABLES
@@ -31,6 +36,13 @@ extern UART_HandleTypeDef huart2;
 /* Application Queues */
 QueueHandle_t xLedModeQueue = NULL;
 QueueHandle_t xTempQueue    = NULL;
+
+/* Application Mutexes */
+static SemaphoreHandle_t xUartMutex = NULL;
+
+/* Application Semaphores */
+SemaphoreHandle_t xButtonSemaphore = NULL;
+
 
 /******************************************************************************
 *                               LOCAL FUNCTION DECLARATIONS
@@ -57,6 +69,38 @@ void App_Run(void)
     {
     }
 }
+
+
+void App_HandleButtonEvent(AppButtonEvent_t event)
+{
+    switch (event)
+    {
+        case APP_BUTTON_SHORT_PRESS:
+            printf("Button: SHORT press\r\n");
+            break;
+
+        case APP_BUTTON_DOUBLE_PRESS:
+            printf("Button: DOUBLE press\r\n");
+            break;
+
+        case APP_BUTTON_LONG_PRESS:
+            printf("Button: LONG press → Boot mode\r\n");
+
+            __HAL_RCC_PWR_CLK_ENABLE();
+            HAL_PWR_EnableBkUpAccess();
+            __HAL_RCC_BKPSRAM_CLK_ENABLE();
+
+            *BOOT_REQUEST_ADDR = BOOT_REQUEST_MAGIC;
+
+            vTaskDelay(pdMS_TO_TICKS(100));
+            NVIC_SystemReset();
+            break;
+
+        default:
+            break;
+    }
+}
+
 
 /******************************************************************************
 *                               LOCAL FUNCTION DEFINITIONS
@@ -125,6 +169,37 @@ static void App_Init(void)
     {
         printf("ERROR: LCD task creation failed\r\n");
     }
+
+    /* Initialize Button module
+     * - Creates RTOS synchronization objects (binary semaphore) */
+    Button_Init();
+
+    /* Create Button task */
+    xTaskCreate(Button_Task,
+                "BUTTON",
+                256,
+                NULL,
+                2,
+                NULL);
+
+
+    /* ---------------- Mutex Creation ---------------- */
+
+    /* UART mutex (supports priority inheritance) */
+    xUartMutex = xSemaphoreCreateMutex();
+    if (xUartMutex == NULL)
+    {
+        printf("ERROR: UART mutex creation failed\r\n");
+    }
+
+    /* ---------------- Semaphore Creation ---------------- */
+
+    /* Button semaphore (ISR → Task) */
+    xButtonSemaphore = xSemaphoreCreateBinary();
+    if (xButtonSemaphore == NULL)
+    {
+        printf("ERROR: Button semaphore creation failed\r\n");
+    }
 }
 
 /******************************************************************************
@@ -136,9 +211,21 @@ static void App_Init(void)
  */
 int __io_putchar(int ch)
 {
+    if (xUartMutex != NULL)
+    {
+        xSemaphoreTake(xUartMutex, portMAX_DELAY);
+    }
+
     HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+
+    if (xUartMutex != NULL)
+    {
+        xSemaphoreGive(xUartMutex);
+    }
+
     return ch;
 }
+
 
 /******************************************************************************
 *                               RTOS HOOKS
