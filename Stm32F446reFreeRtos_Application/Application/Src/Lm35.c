@@ -35,12 +35,7 @@ extern QueueHandle_t xLedModeQueue;
 extern QueueHandle_t xTempQueue;
 
 // Static global structure (private to lm35.c only)
-static LM35_Data_t lm35_data = {
-    .adc_raw = 0,
-    .temperature_c = 0.0f,
-    .adc_timeout_error = false,
-    .sensor_disconnected = false
-};
+static LM35_Data_t lm35_data = {0};
 
 
 /******************************************************************************
@@ -60,9 +55,10 @@ void LM35_Handler(void *pvParameters)
     LedMode_t mode;
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
-    while(1)
+    while (1)
     {
         HAL_ADC_Start(&hadc1);
+
         if (HAL_ADC_PollForConversion(&hadc1, LM35_ADC_TIMEOUT) == HAL_OK)
         {
             lm35_data.adc_raw = HAL_ADC_GetValue(&hadc1);
@@ -73,15 +69,11 @@ void LM35_Handler(void *pvParameters)
                 lm35_data.sensor_disconnected = true;
                 lm35_data.temperature_c = -100.0f;
             }
-            else if  (lm35_data.adc_raw > LM35_OVERTEMPERATURE_ADC)
-            {
-            	lm35_data.sensor_disconnected = true;
-            	lm35_data.temperature_c = ((float)(lm35_data.adc_raw) * 3.3f * 100.0f) / 4095.0f;
-            }
             else
             {
                 lm35_data.sensor_disconnected = false;
-                lm35_data.temperature_c = ((float)(lm35_data.adc_raw) * 3.3f * 100.0f) / 4095.0f;
+                lm35_data.temperature_c =
+                    (lm35_data.adc_raw * 3.3f * 100.0f) / 4095.0f;
             }
         }
         else
@@ -89,30 +81,20 @@ void LM35_Handler(void *pvParameters)
             lm35_data.adc_timeout_error = true;
         }
 
-        // Decide LED mode
         if (lm35_data.sensor_disconnected)
-        {
             mode = LED_MODE_SENSOR_FAIL;
-        }
         else if (lm35_data.adc_timeout_error)
-        {
             mode = LED_MODE_ADC_ERROR;
-        }
         else
-        {
             mode = LED_MODE_NORMAL;
-        }
 
-        // Send LED mode
-        xQueueSend(xLedModeQueue, &mode, 0);
-
-
-        // Send Temperature to the Queue
-        xQueueSend(xTempQueue, &lm35_data.temperature_c,0);  // Only keep latest update
+        xQueueOverwrite(xLedModeQueue, &mode);
+        xQueueOverwrite(xTempQueue, &lm35_data.temperature_c);
 
         HAL_ADC_Stop(&hadc1);
 
-        vTaskDelayUntil(&xLastWakeTime, LM35_SAMPLING_DELAY);
+        vTaskDelayUntil(&xLastWakeTime,
+                         pdMS_TO_TICKS(LM35_SAMPLING_DELAY));
     }
 }
 

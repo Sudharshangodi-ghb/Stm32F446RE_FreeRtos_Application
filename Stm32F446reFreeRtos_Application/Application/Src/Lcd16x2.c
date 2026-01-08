@@ -23,7 +23,6 @@
 
 #define BACKLIGHT      0x08
 #define LCD_ENABLE     0x04
-#define READ_WRITE     0x02
 #define REGISTER_SEL   0x01
 
 /******************************************************************************
@@ -35,36 +34,22 @@ extern I2C_HandleTypeDef hi2c3;
 /******************************************************************************
 *                            LOCAL FUNCTION DECLARATIONS
 ******************************************************************************/
-static void LCD_Send_Cmd(uint8_t cmd);
-static void LCD_Send_Data(uint8_t data);
-static void LCD_Send_4Bits(uint8_t data);
-static void LCD_Enable_Pulse(uint8_t data);
-
 static void LCD_Init(void);
 static void LCD_Clear(void);
 static void LCD_Set_Cursor(uint8_t row, uint8_t col);
 static void LCD_Send_String(char *str);
+static void LCD_Send_Cmd(uint8_t cmd);
+static void LCD_Send_Data(uint8_t data);
+static void LCD_Send_4Bits(uint8_t data);
+static void LCD_Enable_Pulse(uint8_t data);
 
 /******************************************************************************
 *                            API IMPLEMENTATION
 ******************************************************************************/
 void Lcd16x2_Handler(void *params)
 {
-    LcdMessage_t lcdMsg;
     float temperature_c;
-
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-
-#ifdef DEBUG_I2C_SCAN
-    // Optional I2C scan for debugging only
-    HAL_StatusTypeDef res;
-    for (uint8_t i = 1; i < 128; i++) {
-        res = HAL_I2C_IsDeviceReady(&hi2c3, (i << 1), 1, 10);
-        if (res == HAL_OK) {
-            printf("I2C device found at 0x%X\r\n", i << 1);
-        }
-    }
-#endif
+    LcdMessage_t lcdMsg;
 
     LCD_Init();
     LCD_Clear();
@@ -75,10 +60,8 @@ void Lcd16x2_Handler(void *params)
     {
         if (xQueueReceive(xTempQueue, &temperature_c, portMAX_DELAY) == pdPASS)
         {
-
-            // Prepare LCD message
             snprintf(lcdMsg.line1, 16, "Temp: %.1f C", temperature_c);
-            snprintf(lcdMsg.line2, 16, "TempQueue: OK");
+            snprintf(lcdMsg.line2, 16, "Sensor Status");
 
             LCD_Clear();
             LCD_Set_Cursor(0, 0);
@@ -86,7 +69,6 @@ void Lcd16x2_Handler(void *params)
             LCD_Set_Cursor(1, 0);
             LCD_Send_String(lcdMsg.line2);
         }
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
     }
 }
 
@@ -123,8 +105,7 @@ static void LCD_Clear(void)
 
 static void LCD_Set_Cursor(uint8_t row, uint8_t col)
 {
-    uint8_t address = (row == 0) ? (0x80 + col) : (0xC0 + col);
-    LCD_Send_Cmd(address);
+    LCD_Send_Cmd((row == 0) ? (0x80 + col) : (0xC0 + col));
 }
 
 static void LCD_Send_String(char *str)
@@ -137,36 +118,28 @@ static void LCD_Send_String(char *str)
 
 static void LCD_Send_Cmd(uint8_t cmd)
 {
-    uint8_t high_nibble = (cmd & 0xF0);
-    uint8_t low_nibble = ((cmd << 4) & 0xF0);
-    LCD_Send_4Bits(high_nibble | BACKLIGHT);
-    LCD_Send_4Bits(low_nibble | BACKLIGHT);
+    LCD_Send_4Bits(cmd & 0xF0);
+    LCD_Send_4Bits((cmd << 4) & 0xF0);
 }
 
 static void LCD_Send_Data(uint8_t data)
 {
-    uint8_t high_nibble = (data & 0xF0) | REGISTER_SEL | BACKLIGHT;
-    uint8_t low_nibble  = ((data << 4) & 0xF0) | REGISTER_SEL | BACKLIGHT;
-    LCD_Send_4Bits(high_nibble | BACKLIGHT);
-    LCD_Send_4Bits(low_nibble | BACKLIGHT);
+    LCD_Send_4Bits((data & 0xF0) | REGISTER_SEL);
+    LCD_Send_4Bits(((data << 4) & 0xF0) | REGISTER_SEL);
 }
 
 static void LCD_Send_4Bits(uint8_t data)
 {
-    uint8_t data_t[1];
-
-    data_t[0] = data | LCD_ENABLE;
-    HAL_I2C_Master_Transmit(&hi2c3, LCD_ADDR, data_t, 1, LCD_I2C_TIMEOUT);
-    vTaskDelay(pdMS_TO_TICKS(1));  // Small delay
-
+    uint8_t buf = data | BACKLIGHT | LCD_ENABLE;
+    HAL_I2C_Master_Transmit(&hi2c3, LCD_ADDR, &buf, 1, LCD_I2C_TIMEOUT);
+    vTaskDelay(pdMS_TO_TICKS(1));
     LCD_Enable_Pulse(data);
 }
 
 static void LCD_Enable_Pulse(uint8_t data)
 {
-    uint8_t data_t[1];
-    data_t[0] = data & ~LCD_ENABLE;
-    HAL_I2C_Master_Transmit(&hi2c3, LCD_ADDR, data_t, 1, LCD_I2C_TIMEOUT);
+    uint8_t buf = data | BACKLIGHT;
+    HAL_I2C_Master_Transmit(&hi2c3, LCD_ADDR, &buf, 1, LCD_I2C_TIMEOUT);
 }
 
 /******************************************************************************

@@ -2,74 +2,55 @@
 /**
   ******************************************************************************
   * @file           : App.h
-  * @brief          : Header for App.c file.
-  *                   This file contains the common defines of the application.
+  * @brief          : Application layer header file
   ******************************************************************************
   * @attention
   *
   * Copyright (c) 2025 Sudharshan Godi.
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  *
-  * History: v01
-  * 	17-07-2025	-	v01	- Initial version
-  *
-  *
-  *
+  * History:
+  *   17-07-2025  v01  Initial version
   *
   ******************************************************************************
   */
 /* USER CODE END Header */
 
-#ifndef SRC_APP_H_
-#define SRC_APP_H_
-
+#ifndef INC_APP_H_
+#define INC_APP_H_
 
 /******************************************************************************
-*							INCLUDES
+*                               INCLUDES
 ******************************************************************************/
-/* Library headers */
-#include "stm32f4xx_hal.h"
+
+/* Standard C headers */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 
+/* STM32 HAL */
+#include "stm32f4xx_hal.h"
 
-/* Free RTOS - Headers */
+/* FreeRTOS */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 
-/* Application Headers */
+/* Application modules */
 #include "Led.h"
 #include "Lcd16x2.h"
 #include "Lm35.h"
 
 /******************************************************************************
-*							MACRO DEFINITION
+*                               API DECLARATIONS
 ******************************************************************************/
 
-/******************************************************************************
-*							DATA TYPE DECLARATION
-******************************************************************************/
-
-
-/******************************************************************************
-*							API DECLARATIONS
-******************************************************************************/
+/* Application entry */
 void App_Run(void);
 
+/* printf redirection */
 int __io_putchar(int ch);
 
-/******************************************************************************
-*							EOF
-******************************************************************************/
-#endif /* SRC_APP_H_ */
-
-
+#endif /* INC_APP_H_ */

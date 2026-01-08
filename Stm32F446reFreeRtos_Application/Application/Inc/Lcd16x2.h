@@ -1,8 +1,8 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : Led.h
-  * @brief          : Header for led.c file.
+  * @file           : Lcd16x2.h
+  * @brief          : Header for Lcd16x2.c file.
   *                   This file contains the common defines of the application.
   ******************************************************************************
   * @attention

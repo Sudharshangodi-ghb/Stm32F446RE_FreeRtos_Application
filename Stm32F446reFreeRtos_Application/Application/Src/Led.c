@@ -50,31 +50,27 @@ extern QueueHandle_t xLedModeQueue;
 void Led_Handler(void *pvParameters)
 {
     LedMode_t currentMode = LED_MODE_NORMAL;
-    TickType_t xLastWakeTime = xTaskGetTickCount();
 
     while (1)
     {
-        if (xQueueReceive(xLedModeQueue, &currentMode, 0) == pdPASS)
-        {
-            // Mode updated
-        }
+        /* Non-blocking check for mode updates */
+        xQueueReceive(xLedModeQueue, &currentMode, 0);
+
+        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 
         switch (currentMode)
         {
             case LED_MODE_SENSOR_FAIL:
-                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-                vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));
+                vTaskDelay(pdMS_TO_TICKS(200));
                 break;
 
             case LED_MODE_ADC_ERROR:
-                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-                vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
+                vTaskDelay(pdMS_TO_TICKS(500));
                 break;
 
             case LED_MODE_NORMAL:
             default:
-                HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-                vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+                vTaskDelay(pdMS_TO_TICKS(1000));
                 break;
         }
     }

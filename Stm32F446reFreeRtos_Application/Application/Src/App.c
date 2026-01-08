@@ -1,123 +1,164 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : app.c
-  * @brief          : application program body
+  * @file           : App.c
+  * @brief          : Application program body
   ******************************************************************************
   * @attention
   *
   * Copyright (c) 2025 Sudharshan Godi.
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  *History: v01
-  * 	17-07-2025	-	v01	- Initial version
-  *
-  *
+  * History:
+  *   17-07-2025  v01  Initial version
   *
   ******************************************************************************
   */
+/* USER CODE END Header */
 
-/******************************************************************************/
+/******************************************************************************
+*                               INCLUDES
+******************************************************************************/
 #include "App.h"
-/******************************************************************************
-*							INCLUDES
-******************************************************************************/
 
 /******************************************************************************
-*							GLOBAL VARIABLES
+*                               GLOBAL VARIABLES
 ******************************************************************************/
+
+/* UART handle for printf */
 extern UART_HandleTypeDef huart2;
 
+/* Application Queues */
 QueueHandle_t xLedModeQueue = NULL;
 QueueHandle_t xTempQueue    = NULL;
+
 /******************************************************************************
-*							LOCAL FUNCTION DECLARATIONS
+*                               LOCAL FUNCTION DECLARATIONS
 ******************************************************************************/
 static void App_Init(void);
 
-
 /******************************************************************************
-*							CONST DECLARATIONS
+*                               API IMPLEMENTATION
 ******************************************************************************/
 
-/******************************************************************************
-*							API IMPLEMENTATION
-******************************************************************************/
+/**
+ * @brief  Application entry point
+ */
 void App_Run(void)
 {
-	/* Application specific initializations */
-
-
-	/* Creating the tasks for the Application */
+    /* Application initialization */
     App_Init();
 
-    /* Start the FreeRTOS Scheduler */
+    /* Start FreeRTOS scheduler */
     vTaskStartScheduler();
+
+    /* Should never reach here */
+    while (1)
+    {
+    }
 }
 
 /******************************************************************************
-*							LOCAL FUNCTION DEFINITIONS
+*                               LOCAL FUNCTION DEFINITIONS
 ******************************************************************************/
-// Create tasks
-void App_Init(void)
+
+/**
+ * @brief  Initialize RTOS objects and tasks
+ */
+static void App_Init(void)
 {
-    // Create Queues
-    xLedModeQueue = xQueueCreate(5, sizeof(LedMode_t));
-    if (xLedModeQueue == NULL)
-    {
-        printf("Failed to create LED queue!\r\n");
-    }
-
-    xTempQueue = xQueueCreate(5, sizeof(float));
-    if (xTempQueue == NULL)
-    {
-        printf("Failed to create temperature queue!\r\n");
-    }
-
-    // Create Tasks with adjusted priorities and stack
     BaseType_t status;
 
-    status = xTaskCreate(Led_Handler, "LED", 128, NULL, 1, NULL);
-    if (status != pdPASS) printf("LED Task creation failed!\r\n");
+    /* ---------------- Queue Creation ---------------- */
 
-    status = xTaskCreate(LM35_Handler, "LM35", 128, NULL, 2, NULL);  // Highest priority
-    if (status != pdPASS) printf("LM35 Task creation failed!\r\n");
+    /* LED mode queue (latest state only) */
+    xLedModeQueue = xQueueCreate(1, sizeof(LedMode_t));
+    if (xLedModeQueue == NULL)
+    {
+        printf("ERROR: LED queue creation failed\r\n");
+    }
 
-    status = xTaskCreate(Lcd16x2_Handler, "LCD", 512, NULL, 1, NULL);  // Increased stack
-    if (status != pdPASS) printf("LCD Task creation failed!\r\n");
+    /* Temperature queue (latest value only) */
+    xTempQueue = xQueueCreate(1, sizeof(float));
+    if (xTempQueue == NULL)
+    {
+        printf("ERROR: Temperature queue creation failed\r\n");
+    }
+
+    /* ---------------- Task Creation ---------------- */
+
+    /* LED Task – periodic, low priority */
+    status = xTaskCreate(
+                Led_Handler,
+                "LED_Task",
+                128,
+                NULL,
+                1,
+                NULL);
+    if (status != pdPASS)
+    {
+        printf("ERROR: LED task creation failed\r\n");
+    }
+
+    /* LM35 Task – periodic, highest priority */
+    status = xTaskCreate(
+                LM35_Handler,
+                "LM35_Task",
+                256,
+                NULL,
+                2,
+                NULL);
+    if (status != pdPASS)
+    {
+        printf("ERROR: LM35 task creation failed\r\n");
+    }
+
+    /* LCD Task – event-driven, low priority */
+    status = xTaskCreate(
+                Lcd16x2_Handler,
+                "LCD_Task",
+                512,
+                NULL,
+                1,
+                NULL);
+    if (status != pdPASS)
+    {
+        printf("ERROR: LCD task creation failed\r\n");
+    }
 }
 
+/******************************************************************************
+*                               LOW-LEVEL IO
+******************************************************************************/
 
-
-int __io_putchar(int ch) {
+/**
+ * @brief  Redirect printf to UART2
+ */
+int __io_putchar(int ch)
+{
     HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
     return ch;
 }
 
+/******************************************************************************
+*                               RTOS HOOKS
+******************************************************************************/
 
-/* RTOS - Hooks */
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+/**
+ * @brief  Stack overflow hook
+ */
+void vApplicationStackOverflowHook(TaskHandle_t xTask,
+                                   char *pcTaskName)
 {
-    // Log error (e.g., to UART or LED)
-    printf("Stack overflow in task: %s\r\n", pcTaskName);
+    printf("RTOS Stack Overflow: %s\r\n", pcTaskName);
 
-    // Optionally blink an LED or halt system
-    while(1)
+    while (1)
     {
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  // Toggle onboard LED
-        HAL_Delay(250);  // Use HAL for blinking to avoid blocking FreeRTOS
+        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+        HAL_Delay(250);
     }
 }
 
-
-
-
 /******************************************************************************
-*							EOF
+*                               EOF
 ******************************************************************************/
-
