@@ -40,9 +40,6 @@ QueueHandle_t xTempQueue    = NULL;
 /* Application Mutexes */
 static SemaphoreHandle_t xUartMutex = NULL;
 
-/* Application Semaphores */
-SemaphoreHandle_t xButtonSemaphore = NULL;
-
 
 /******************************************************************************
 *                               LOCAL FUNCTION DECLARATIONS
@@ -170,8 +167,7 @@ static void App_Init(void)
         printf("ERROR: LCD task creation failed\r\n");
     }
 
-    /* Initialize Button module
-     * - Creates RTOS synchronization objects (binary semaphore) */
+    /* Init the button module */
     Button_Init();
 
     /* Create Button task */
@@ -190,15 +186,6 @@ static void App_Init(void)
     if (xUartMutex == NULL)
     {
         printf("ERROR: UART mutex creation failed\r\n");
-    }
-
-    /* ---------------- Semaphore Creation ---------------- */
-
-    /* Button semaphore (ISR → Task) */
-    xButtonSemaphore = xSemaphoreCreateBinary();
-    if (xButtonSemaphore == NULL)
-    {
-        printf("ERROR: Button semaphore creation failed\r\n");
     }
 }
 

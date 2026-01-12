@@ -44,7 +44,12 @@ static uint8_t pressCount = 0;
 ******************************************************************************/
 void Button_Init(void)
 {
-    xButtonSemaphore = xSemaphoreCreateBinary();
+    /* Button semaphore (ISR → Task) */
+	xButtonSemaphore = xSemaphoreCreateBinary();
+	if (xButtonSemaphore == NULL)
+	{
+		printf("ERROR: Button semaphore creation failed\r\n");
+	}
 }
 
 void Button_ISR_Callback(void)
